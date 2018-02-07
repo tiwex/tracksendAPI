@@ -24,10 +24,18 @@ class ContactController extends Controller
    {
 	 $this->validator($request->all())->validate();
 	 $contact = Contact::create($request->all());
-
 	 return response()->json($contact,201);
    }
 
+    public function bulk(Request $request)
+   {
+   $this->validator($request->all())->validate();
+
+    $contacts = $request->all();;
+
+   $contacts= DB::table('users')->insert($contacts);
+   return response()->json($contacts,201);
+   }
 
       public function show(Contact $contact)
    {

@@ -80,6 +80,7 @@ class RegisterController extends Controller
     
        $user->password =Hash::make($user->password);
        $user->save();
+       //send welcome and  verficationn email if i can verify email 
         return response()->json($user, 201);
     }
 }
