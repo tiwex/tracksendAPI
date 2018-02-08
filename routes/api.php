@@ -23,7 +23,7 @@ Route::post('createcontact', 'Contact\ContactController@store');
 Route::post('creategroup', 'Contact\GroupController@store');
 Route::post('assigngroup', 'Contact\GroupController@assign');
 Route::get('groups/{userid}', 'Contact\GroupController@show');
-Route::get('contactsbygroup/{groupid}', 'Contact\ContactController@showbygroup');
+Route::get('contactsbygroup/{groupid}/{userid}', 'Contact\ContactController@showbygroup');
 Route::get('contacts/{contact}', 'Contact\ContactController@show');
 Route::post('createcampaign', 'Campaign\CampaignController@store');
 Route::post('createmessage', 'Campaign\MessageController@store');

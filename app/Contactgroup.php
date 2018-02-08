@@ -8,5 +8,5 @@ class Contactgroup extends Model
 {
     //
      protected $fillable = [
-        'group_id','contact_id' ];
+       'user_id','group_id','contact_id' ];
 }
