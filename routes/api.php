@@ -29,3 +29,5 @@ Route::post('createcampaign', 'Campaign\CampaignController@store');
 Route::post('createmessage', 'Campaign\MessageController@store');
 Route::post('createsender', 'Campaign\SenderController@store');
 Route::post('createtracker', 'Track\TrackerController@store');
+Route::post('bill', 'Campaign\MessageController@calculaterate');
+Route::post('deductcredit', 'Campaign\MessageController@deductcredit');

@@ -10,6 +10,6 @@ class Campaign extends Model
     //
     
     protected $fillable = [
-        'name', 'user_id'];
+        'name', 'user_id','provider_id','channel_id','status'];
    
 }

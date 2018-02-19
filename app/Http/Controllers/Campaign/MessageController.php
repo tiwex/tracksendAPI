@@ -3,9 +3,14 @@
 namespace App\Http\Controllers\Campaign;
 
 use App\Message;
+use App\Campaign;
+use App\Message_Transaction;
+use App\User;
+use App\Send_group;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class MessageController extends Controller
 {
@@ -17,7 +22,7 @@ class MessageController extends Controller
      protected function validator(array $data)
     {
         return Validator::make($data, [
-            'type' => 'required|integer',
+              'type' => 'required|integer',
              'message' => 'required|string'
             
         ]);
@@ -46,16 +51,66 @@ class MessageController extends Controller
     public function store(Request $request)
     {
         //
-         $this->validator($request->all())->validate();
-        $message = Message::create($request->all());
+        // $this->validator($request->all())->validate();
+        
+         $user_id=$request->input('user_id');
+         $campaign_id=$request->input('campaign_id');
+         $messages= $request->input('messages');
+         $groups =$request->input('group');
+         $recepient =$request->input('recepient');
+         $is_sent =$request->input('is_sent');
+        /* foreach ( $recepient as $value)
+         {
+            $array[]= array('campaign_id'=>$campaign,'type'=>$type,'message'=>$message,'recepient'=>$value);
+         }*/
+         //'type','message','is_sent','is_clicked','schedule_at
+         $campaign = Campaign::where('id',$campaign_id)->first();
+        // $campaign_update=Campaign::find($campaign_id);
+        $campaign->recepient=implode(",",$recepient);
+       $campaign->save();
+         $totalrate=$this->totalcredit($groups,$recepient);
+         $balance=$this->checkbalance($user_id);
+         foreach ( $groups as $value)
+         {
+            $array=array("user_id"=>$user_id,"campaign_id"=>$campaign_id,"group_id"=>$value);
+            $send_groups[] = Send_group::create($array);
+         }
+
+  if ($campaign->channel_id==2 and $campaign->status==0) 
+  {
+         if  ($balance > $totalrate )
+
+      {
+        $status =array("sent"=>true);     
+      
+    }
+    elseIf ($balance < $totalrate)
+    {
+        $status =array("sent"=>"insufficient credit");
+   }
+    else
+    {
+       
+         $status =array("sent"=>"in_draft");    
+    }
+    foreach ( $messages as $value)
+    {
+       
+       $array= array('user_id'=>$user_id,'campaign_id'=>$campaign_id,'type'=>$value['type'],'message'=>$value['message']
+                    ,'is_clicked'=>$value['is_clicked'],'scheduled_at'=>$value['scheduled_at']);
+   
+     $message[] = Message::create($array);
+   }
+  }
+  
+  
+    
+     $message=array("message"=>$message,"campaign"=>$campaign,"status"=>$status,"send_group"=>$send_groups);
+         
+         
+        
+     
          return response()->json($message,201);
-
-        //save in draft 
-        //send message
-        //send follow up message 
-        //track url 
-
-     return response()->json($campaign,201);
     }
 
     /**
@@ -68,7 +123,35 @@ class MessageController extends Controller
     {
         //
     }
+    public function sendSMS(message $message)
+    {
+        //
+    }
+    public function calculaterate(Request $request)
+    {
+        //
+        $rate = array ("user"=>$request->user_id,"total_bill"=>500,"summary"=>array("MTN"=>100,"9mobile"=>400));
+        return response()->json($rate,201);
+    }
+    public function deductcredit(Request $request)
+    {
+        //
 
+        $deduct = array ("user"=>$request->user_id,"balance"=>300,"credit_deducted"=>100,"status"=>true);
+        return response()->json($deduct,201);
+    }
+    public function totalcredit($group,$recepient)
+    {
+        //
+        $rate = 500;
+        return $rate;
+    }
+    public function checkbalance($user)
+    {
+        //
+        $balance = 5000;
+        return $balance;
+    }
     /**
      * Show the form for editing the specified resource.
      *

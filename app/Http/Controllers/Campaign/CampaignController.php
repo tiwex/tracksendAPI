@@ -6,6 +6,7 @@ use App\Campaign;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class CampaignController extends Controller
 {
@@ -13,8 +14,7 @@ class CampaignController extends Controller
     protected function validator(array $data)
     {
         return Validator::make($data, [
-            'name' => 'required|string|max:255|unique',
-            
+            'name' => 'required|string|max:255',
         ]);
     }
     /**
@@ -46,9 +46,21 @@ class CampaignController extends Controller
      */
     public function store(Request $request)
     {
-        //
      $this->validator($request->all())->validate();
-	 $campaign = Campaign::create($request->all());
+     $campaign = Campaign::create($request->all());
+   /*$name=$request->input('name');
+    //$user_id = $request->input('user_id');
+    //$campaign=DB::table('campaigns')->insert(
+     ['name' => $name, 'user_id' => $user_id,'created_at'=>date("Y-m-d h:i:s"),'updated_at'=>date("Y-m-d h:i:s")]
+    )*/;
+ 
+
+     //confirm if messgae will be schedule,saved or sent now
+     //if meesage statu is set to sent put message in a mesage queue for sending
+     //if message status is et to scheudle put in a message queueu
+
+
+
 	 return response()->json($campaign,201);
 
     }
@@ -59,11 +71,16 @@ class CampaignController extends Controller
      * @param  \App\campaign  $campaign
      * @return \Illuminate\Http\Response
      */
-    public function show(campaign $campaign)
+    public function getcampaign(campaign $campaign)
     {
-        //
+        //getsentcampaign,get contacts/recepient message status , 
+        //getdraftandschedule campaign
     }
-
+    public function pricecalculator(campaign $campaign)
+    {
+        //getsentcampaign,get contacts/recepient message status , 
+        //getdraftandschedule campaign
+    }
     /**
      * Show the form for editing the specified resource.
      *
