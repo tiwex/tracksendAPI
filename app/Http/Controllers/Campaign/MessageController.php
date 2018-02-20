@@ -57,6 +57,7 @@ class MessageController extends Controller
          $campaign_id=$request->input('campaign_id');
          $messages= $request->input('messages');
          $groups =$request->input('group');
+         $sender =$request->input('sender_id');
          $recepient =$request->input('recepient');
          $is_sent =$request->input('is_sent');
         /* foreach ( $recepient as $value)
@@ -67,8 +68,9 @@ class MessageController extends Controller
          $campaign = Campaign::where('id',$campaign_id)->first();
         // $campaign_update=Campaign::find($campaign_id);
         $campaign->recepient=implode(",",$recepient);
+        $campaign->sender_id=$sender;
        $campaign->save();
-         $totalrate=$this->totalcredit($groups,$recepient);
+         $totalrate=$this->totalcredit($groups,$recepient,$sender);
          $balance=$this->checkbalance($user_id);
          foreach ( $groups as $value)
          {
@@ -140,7 +142,7 @@ class MessageController extends Controller
         $deduct = array ("user"=>$request->user_id,"balance"=>300,"credit_deducted"=>100,"status"=>true);
         return response()->json($deduct,201);
     }
-    public function totalcredit($group,$recepient)
+    public function totalcredit($group,$recepient,$sender)
     {
         //
         $rate = 500;
