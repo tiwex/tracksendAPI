@@ -26,6 +26,7 @@ Route::get('groups/{userid}', 'Contact\GroupController@show');
 Route::get('contactsbygroup/{groupid}/{userid}', 'Contact\ContactController@showbygroup');
 Route::get('contacts/{userid}', 'Contact\ContactController@show');
 Route::post('createcampaign', 'Campaign\CampaignController@store');
+Route::get('getcampaign/{userid}', 'Campaign\CampaignController@show');
 Route::post('createmessage', 'Campaign\MessageController@store');
 Route::post('createsender', 'Campaign\SenderController@store');
 Route::post('createtracker', 'Track\TrackerController@store');

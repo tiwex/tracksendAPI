@@ -71,10 +71,13 @@ class CampaignController extends Controller
      * @param  \App\campaign  $campaign
      * @return \Illuminate\Http\Response
      */
-    public function getcampaign(campaign $campaign)
+    public function show($userid)
     {
         //getsentcampaign,get contacts/recepient message status , 
         //getdraftandschedule campaign
+      $campaign=DB::table('campaigns')->where('user_id', $userid)->get();
+
+      return response()->json($campaign,201);
     }
     public function pricecalculator(campaign $campaign)
     {
