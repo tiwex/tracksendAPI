@@ -37,9 +37,9 @@ class ContactController extends Controller
    return response()->json($contacts,201);
    }
 
-      public function show(Contact $contact)
+      public function show($userid)
    {
-    $contact = Contact::where('user_id',$contact->user_id) 
+    $contact = Contact::where('user_id',$userid) 
                ->orderby('created_at','desc')
                ->get();
 

@@ -125,9 +125,44 @@ class MessageController extends Controller
     {
         //
     }
-    public function sendSMS(message $message)
+    public function sendsms()
     {
-        //
+
+$curl = curl_init();
+
+curl_setopt_array($curl, array(
+  CURLOPT_URL => "https://api.infobip.com/sms/1/text/single",
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => "",
+  CURLOPT_MAXREDIRS => 10,
+  CURLOPT_TIMEOUT => 30,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_CUSTOMREQUEST => "POST",
+  CURLOPT_POSTFIELDS => "{\r\n\t\"from\":\"Prowmobile\",
+   \r\n\t\"to\":\"2348022881418\",
+    \r\n\t\"text\":\"Test SMS.\"}",
+  CURLOPT_HTTPHEADER => array(
+    "accept: application/json",
+    "authorization: Basic dGhpbmt0ZWNoOlRqZmxhc2g4MzE5Iw==",
+    "content-type: application/json"
+  ),
+));
+
+$response = curl_exec($curl);
+$err = curl_error($curl);
+
+curl_close($curl);
+
+if ($err) {
+$err;
+} else {
+  echo $response;
+}
+//echo "test";
+   $response=array("response"=>$response,"error"=>$err);
+   print_r($response);
+		//return response()->json($response,201);
+
     }
     public function calculaterate(Request $request)
     {
@@ -175,6 +210,7 @@ class MessageController extends Controller
     public function update(Request $request, message $message)
     {
         //
+
     }
 
     /**
