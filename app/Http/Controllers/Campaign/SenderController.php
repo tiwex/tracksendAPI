@@ -6,6 +6,7 @@ use App\Sender;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class SenderController extends Controller
 {
@@ -51,17 +52,21 @@ class SenderController extends Controller
      $sender = Sender::create($request->all());
      return response()->json($sender,201);
     }
+    public function show($userid)
+    {
+        //getsentcampaign,get contacts/recepient message status , 
+        //getdraftandschedule campaign
+      $campaign=DB::table('senders')->where('user_id', $userid)->get();
 
+      return response()->json($campaign,201);
+    }
     /**
      * Display the specified resource.
      *
      * @param  \App\Sender  $sender
      * @return \Illuminate\Http\Response
      */
-    public function show(Sender $sender)
-    {
-        //
-    }
+   
 
     /**
      * Show the form for editing the specified resource.

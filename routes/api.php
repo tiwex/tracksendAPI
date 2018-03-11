@@ -27,9 +27,10 @@ Route::get('contactsbygroup/{groupid}/{userid}', 'Contact\ContactController@show
 Route::get('contacts/{userid}', 'Contact\ContactController@show');
 Route::post('createcampaign', 'Campaign\CampaignController@store');
 Route::get('getcampaign/{userid}', 'Campaign\CampaignController@show');
+Route::get('getsenders/{userid}', 'Campaign\SenderController@show');
 Route::post('createmessage', 'Campaign\MessageController@store');
 Route::post('createsender', 'Campaign\SenderController@store');
 Route::post('createtracker', 'Track\TrackerController@store');
-Route::post('bill', 'Campaign\MessageController@calculaterate');
+Route::get('bill/{campaign_id}/{user_id}', 'Campaign\MessageController@calculaterate');
 Route::post('deductcredit', 'Campaign\MessageController@deductcredit');
 Route::post('sms', 'Campaign\MessageController@sendsms');

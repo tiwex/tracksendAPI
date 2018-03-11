@@ -60,18 +60,19 @@ class MessageController extends Controller
          $sender =$request->input('sender_id');
          $recepient =$request->input('recepient');
          $is_sent =$request->input('is_sent');
+         $url_id =$request->input('url_id');
         /* foreach ( $recepient as $value)
          {
             $array[]= array('campaign_id'=>$campaign,'type'=>$type,'message'=>$message,'recepient'=>$value);
          }*/
          //'type','message','is_sent','is_clicked','schedule_at
-         $campaign = Campaign::where('id',$campaign_id)->first();
+        $campaign = Campaign::where('id',$campaign_id)->first();
         // $campaign_update=Campaign::find($campaign_id);
         $campaign->recepient=implode(",",$recepient);
         $campaign->sender_id=$sender;
-       $campaign->save();
-         $totalrate=$this->totalcredit($groups,$recepient,$sender);
-         $balance=$this->checkbalance($user_id);
+        $campaign->save();
+        $totalrate=$this->totalcredit($groups,$recepient,$sender);
+        $balance=$this->checkbalance($user_id);
          foreach ( $groups as $value)
          {
             $array=array("user_id"=>$user_id,"campaign_id"=>$campaign_id,"group_id"=>$value);
@@ -83,6 +84,8 @@ class MessageController extends Controller
          if  ($balance > $totalrate )
 
       {
+       
+        //put in a queue ,save recors in message transaaction table
         $status =array("sent"=>true);     
       
     }
@@ -125,25 +128,26 @@ class MessageController extends Controller
     {
         //
     }
-    public function sendsms()
+    public function sendsms(Message $message)
     {
-
+        //
+        $username="thinktech";
+        $password="Tjflash8319#";
+        $header = "Basic " . base64_encode($username . ":" . $password);
 $curl = curl_init();
 
 curl_setopt_array($curl, array(
-  CURLOPT_URL => "https://api.infobip.com/sms/1/text/single",
+  CURLOPT_URL => "http://api.infobip.com/sms/1/text/single",
   CURLOPT_RETURNTRANSFER => true,
   CURLOPT_ENCODING => "",
   CURLOPT_MAXREDIRS => 10,
   CURLOPT_TIMEOUT => 30,
   CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
   CURLOPT_CUSTOMREQUEST => "POST",
-  CURLOPT_POSTFIELDS => "{\r\n\t\"from\":\"Prowmobile\",
-   \r\n\t\"to\":\"2348022881418\",
-    \r\n\t\"text\":\"Test SMS.\"}",
+  CURLOPT_POSTFIELDS => "{ \"from\":\"Spaceba\", \"to\":[\"2348089357063,2348022881418\"], \"text\":\"Test SMS.\" }",
   CURLOPT_HTTPHEADER => array(
     "accept: application/json",
-    "authorization: Basic dGhpbmt0ZWNoOlRqZmxhc2g4MzE5Iw==",
+    "authorization: ".$header,
     "content-type: application/json"
   ),
 ));
@@ -154,27 +158,22 @@ $err = curl_error($curl);
 curl_close($curl);
 
 if ($err) {
-$err;
+  echo "cURL Error #:" . $err;
 } else {
   echo $response;
 }
-//echo "test";
-   $response=array("response"=>$response,"error"=>$err);
-   print_r($response);
-		//return response()->json($response,201);
-
     }
-    public function calculaterate(Request $request)
+    public function calculaterate($campaign_id,$user_id)
     {
         //
-        $rate = array ("user"=>$request->user_id,"total_bill"=>500,"summary"=>array("MTN"=>100,"9mobile"=>400));
+        $rate = array ("user"=>$user_id,"total_bill"=>500,"summary"=>array("MTN"=>100,"9mobile"=>400));
         return response()->json($rate,201);
     }
     public function deductcredit(Request $request)
     {
         //
 
-        $deduct = array ("user"=>$request->user_id,"balance"=>300,"credit_deducted"=>100,"status"=>true);
+        $deduct = array ("user"=>$request->user_id,"balance"=>300,"credit_deducted"=>100,"status"=>true,"cammapign"=>$request->campaign_id);
         return response()->json($deduct,201);
     }
     public function totalcredit($group,$recepient,$sender)
@@ -210,7 +209,6 @@ $err;
     public function update(Request $request, message $message)
     {
         //
-
     }
 
     /**
