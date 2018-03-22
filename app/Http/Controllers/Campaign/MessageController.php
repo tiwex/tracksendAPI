@@ -101,8 +101,8 @@ class MessageController extends Controller
     foreach ( $messages as $value)
     {
        
-       $array= array('user_id'=>$user_id,'campaign_id'=>$campaign_id,'type'=>$value['type'],'message'=>$value['message']
-                    ,'is_clicked'=>$value['is_clicked'],'scheduled_at'=>$value['scheduled_at']);
+       $array= array("user_id"=>$user_id,"campaign_id"=>$campaign_id,"type"=>$value['type'],"message"=>$value['message']
+                    ,"is_clicked"=>$value['is_clicked'],"scheduled_at"=>$value['scheduled_at']);
    
      $message[] = Message::create($array);
    }
@@ -128,12 +128,15 @@ class MessageController extends Controller
     {
         //
     }
-    public function sendsms(Message $message)
+    protected function sendsms(Message $message)
     {
         //
+        $arr=array("from"=>"spaceba","to"=>array("2348022881418","2348089357063"),"text"=>"test SMS");
         $username="thinktech";
         $password="Tjflash8319#";
         $header = "Basic " . base64_encode($username . ":" . $password);
+        $url = "https://api.infobip.com/sms/1/text/single";// your url
+        $data_string = json_encode($arr);
 $curl = curl_init();
 
 curl_setopt_array($curl, array(
@@ -144,7 +147,7 @@ curl_setopt_array($curl, array(
   CURLOPT_TIMEOUT => 30,
   CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
   CURLOPT_CUSTOMREQUEST => "POST",
-  CURLOPT_POSTFIELDS => "{ \"from\":\"Spaceba\", \"to\":[\"2348089357063,2348022881418\"], \"text\":\"Test SMS.\" }",
+  CURLOPT_POSTFIELDS => $data_string,
   CURLOPT_HTTPHEADER => array(
     "accept: application/json",
     "authorization: ".$header,
@@ -161,6 +164,45 @@ if ($err) {
   echo "cURL Error #:" . $err;
 } else {
   echo $response;
+}
+    }
+    protected function getreport(Message $message)
+    {
+        //
+        //$arr=array("from"=>"spaceba","to"=>array("2348022881418","2348089357063"),"text"=>"test SMS");
+        $username="thinktech";
+        $password="Tjflash8319#";
+        $header = "Basic " . base64_encode($username . ":" . $password);
+        $msgid="2208430547190522904";
+        $url = "https://api.infobip.com/sms/1/reports?messageId=".$msgid;// your url
+       // $data_string = json_encode($arr);
+$curl = curl_init();
+
+curl_setopt_array($curl, array(
+CURLOPT_URL =>$url ,
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => "",
+  CURLOPT_MAXREDIRS => 10,
+  CURLOPT_TIMEOUT => 30,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_CUSTOMREQUEST => "GET",
+  //CURLOPT_POSTFIELDS => $data_string,
+  CURLOPT_HTTPHEADER => array(
+    "accept: application/json",
+    "authorization: ".$header,
+    "content-type: application/json"
+  ),
+));
+
+$response = curl_exec($curl);
+$err = curl_error($curl);
+
+curl_close($curl);
+
+if ($err) {
+  echo "cURL Error #:" . $err;
+} else {
+  echo json_decode($response).$url;
 }
     }
     public function calculaterate($campaign_id,$user_id)

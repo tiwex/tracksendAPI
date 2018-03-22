@@ -15,3 +15,5 @@ Route::get('/', function () {
     return view('welcome');
 });
 Route::get('/sms', 'Campaign\MessageController@sendsms');
+Route::get('/contact', 'Contact\ContactController@store');
+Route::get('/report', 'Campaign\MessageController@getreport');

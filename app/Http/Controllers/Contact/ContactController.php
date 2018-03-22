@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Contact;
 use App\Contact;
+use App\Contactgroup;
 use App\User;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -14,17 +15,54 @@ class ContactController extends Controller
         protected function validator(array $data)
     {
         return Validator::make($data, [
-            'phone' => 'required|string|max:255',
-            'email' => 'string|email|max:255',
+            'contact.phone' => 'required|string|max:255',
             
         ]);
     }
 
     public function store(Request $request)
    {
-	 $this->validator($request->all())->validate();
-	 $contact = Contact::create($request->all());
-	 return response()->json($contact,201);
+     //s$this->validator($request->all())->validate();
+
+   $user_id=$request->input('user_id');
+      /* $phone=$request->input('phone');
+     $email=$request->input('email');
+     $fname=$request->input('fname');
+     $lname=$request->input('lname');
+     $lname=$request->input('name');
+     $country=$request->input('country');
+     $state=$request->input('state');
+     $city=$request->input('city');*/
+     
+     $contact=$request->input('contact');
+     $group=$request->input('group');
+     $i=0;
+    
+     foreach ( $contact as $value)
+     {
+         $array=array("user_id" => $user_id,"phone"=>$value['phone'],"email"=>$value['email'],"fname"=>$value['fname'],
+         "lname"=>$value['lname'],"name"=>$value['name'],"country"=>$value['country']
+         ,"state"=>$value['state'],"city"=>$value['city']);
+
+        $contacts[] = Contact::create($array);
+
+        if (!empty($group))
+      {
+        foreach ( $group as $value)
+        {
+            $array_group=array("user_id"=>$user_id,"contact_id"=> $contacts[$i]->id,"group_id"=>$value);
+            $contact_group[]=Contactgroup::create($array_group);
+        }
+        $i++;
+       
+} else  $contact_group="empty group";
+     }
+
+    // print_r($contact);
+    // print_r($contact_group);
+    // $contact = Contact::create($request->all());
+    $final=array("contact"=>$contacts,"group"=>$contact_group);
+	 return response()->json($final,201);
    }
 
     public function bulk(Request $request)
