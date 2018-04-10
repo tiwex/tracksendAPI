@@ -130,32 +130,36 @@ $m_status=array();
      
         foreach($contacts as $val)
         {
-       /* $array=array('user_id'=>$user_id,'campaign_id'=>$campaign_id,
+        $array=array('user_id'=>$user_id,'campaign_id'=>$campaign_id,
         'contact_id'=>$val->id,'message_id'=>$msg->id,'recepient'=>"");
-        $msg_transaction[]= Message_transaction::create($array);*/
+        $msg_transaction[]= Message_transaction::create($array);
         $pcontact=$val->phone;
         if (substr($pcontact,0,3) != "234")
         {
-            $pcontacts[]="234".substr($pcontact,1);
+            $pcontact="234".substr($pcontact,1);
         } 
-        else $pcontacts[]= $pcontact;
+        $pcontacts[]=array("to"=>$pcontact,"messageId"=>$msg_transaction["id"]);
         }
+        
         //$m_report=$this->getreport($msgid);
     
     foreach ($recepient as $value)
     {
-       /* $array=array('user_id'=>$user_id,'campaign_id'=>$campaign_id,
-        'contact_id'=>null,'message_id'=>$msg->id,'recepient'=>$value);
-       $msg_transaction[]= Message_transaction::create($array);*/
+       
         $pcontact=$value;
         if (substr($pcontact,0,3) != "234")
         {
-            $pcontacts[]="234".substr($pcontact,1);
+            $pcontact="234".substr($pcontact,1);
         } 
-        else $pcontacts[]= $pcontact;
+       
+        $array=array('user_id'=>$user_id,'campaign_id'=>$campaign_id,
+        'contact_id'=>null,'message_id'=>$msg->id,'recepient'=>$pcontact);
+       $msg_transaction[]= Message_transaction::create($array);
+       $pcontacts[]=array("to"=>$pcontact,"messageId"=>$msg_transaction["id"]);
     }
 
    $m_status=$this->sendsms($msg->message,$sender_name,$pcontacts);
+    
     $campaign->status=1;
     $campaign->save();
          
@@ -166,7 +170,12 @@ $m_status=array();
             $transaction = Transaction::create($array);
          //deduct update the message _trasnaction table and transaction table
         //put in a queue ,save recors in message transaaction table
-        $m_status =$m_status;     
+        $m_status =$m_status; 
+
+        $array=array('user_id'=>$user_id,'campaign_id'=>$campaign_id,
+        'contact_id'=>null,'message_id'=>$msg->id,'recepient'=>$value);
+        $msg_transaction[]= Message_transaction::create($array);
+
        // $status =array("sent credit");
     }
     elseIf ($balance < $totalrate)
@@ -258,7 +267,7 @@ if ($err) {
   return "cURL Error #:" . $err;
 } else {
     $result=json_decode($response,true);
- print_r($result);
+ return $result;
  
 }
     }

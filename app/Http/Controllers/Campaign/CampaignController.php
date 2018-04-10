@@ -52,12 +52,13 @@ class CampaignController extends Controller
     //$user_id = $request->input('user_id');
     //$campaign=DB::table('campaigns')->insert(
      ['name' => $name, 'user_id' => $user_id,'created_at'=>date("Y-m-d h:i:s"),'updated_at'=>date("Y-m-d h:i:s")]
-    )*/;
+    )*/
  
 
      //confirm if messgae will be schedule,saved or sent now
      //if meesage statu is set to sent put message in a mesage queue for sending
      //if message status is et to scheudle put in a message queueu
+     return response()->json($campaign,201);
     }
 
     /**
