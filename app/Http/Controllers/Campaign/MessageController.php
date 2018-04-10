@@ -223,17 +223,17 @@ $m_status=array();
        //$sender="SPACEBA";
         //$recepient=array("2348022881418");
        // $numbers=array("2348022881418","2348089357063");
-        foreach ($recepient as $val)
+       /* foreach ($recepient as $val)
         {
             $recepients[]=array("to"=>$val);
         
-        }
+        }*/
  
         //$arr=array("from"=>$sender,"to"=>$recepient,"text"=>$message);
         $arr=array("from"=>$sender,"destinations"=>$recepients,"text"=>$message);
         $arr1=array("messages"=>array($arr));
-        $username="thinktech";
-        $password="Tjflash8319#";
+        $username="prowedge";
+        $password="tjflash83";
         $header = "Basic " . base64_encode($username . ":" . $password);
         //$url = "https://api.infobip.com/sms/1/text/single";
         $url = "https://api.infobip.com/sms/1/text/advanced";

@@ -74,7 +74,7 @@ class CampaignController extends Controller
       /*$campaign=DB::table('campaigns')->
       where('user_id', $userid)->get();*/
       $campaign=DB::table('campaigns')
-      ->join('messages', 'messages.campaign_id', '=', 'campaigns.id')
+      ->leftjoin('messages', 'messages.campaign_id', '=', 'campaigns.id')
       ->where('campaigns.user_id',$userid)
       ->get();
       return response()->json($campaign,201);
