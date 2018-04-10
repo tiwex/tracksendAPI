@@ -4,13 +4,15 @@ namespace App\Http\Controllers\Campaign;
 
 use App\Message;
 use App\Campaign;
-use App\Message_Transaction;
+use App\Message_transaction;
 use App\User;
-use App\Send_group;
+use App\Transaction;
+use App\Send_group ;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class MessageController extends Controller
 {
@@ -61,61 +63,138 @@ class MessageController extends Controller
          $recepient =$request->input('recepient');
          $is_sent =$request->input('is_sent');
          $url_id =$request->input('url_id');
-        /* foreach ( $recepient as $value)
-         {
-            $array[]= array('campaign_id'=>$campaign,'type'=>$type,'message'=>$message,'recepient'=>$value);
-         }*/
-         //'type','message','is_sent','is_clicked','schedule_at
+         $msg=DB::table('messages')->where([['campaign_id', $campaign_id],['type',0]])->first();
         $campaign = Campaign::where('id',$campaign_id)->first();
-        // $campaign_update=Campaign::find($campaign_id);
         $campaign->recepient=implode(",",$recepient);
         $campaign->sender_id=$sender;
         $campaign->save();
-        $totalrate=$this->totalcredit($groups,$recepient,$sender);
         $balance=$this->checkbalance($user_id);
-         foreach ( $groups as $value)
-         {
-            $array=array("user_id"=>$user_id,"campaign_id"=>$campaign_id,"group_id"=>$value);
-            $send_groups[] = Send_group::create($array);
-         }
+        $price_credit= DB::table('users')
+                     ->where('id', $user_id)
+                     ->value('price_credit');
+                     
+        $sender_name= DB::table('senders')
+                     ->where([['id', $sender],['user_id',$user_id]])
+                     ->value('name');      
 
-  if ($campaign->channel_id==2 and $campaign->status==0) 
-  {
-         if  ($balance > $totalrate )
-
-      {
-       
-        //put in a queue ,save recors in message transaaction table
-        $status =array("sent"=>true);     
-      
-    }
-    elseIf ($balance < $totalrate)
-    {
-        $status =array("sent"=>"insufficient credit");
-   }
-    else
+    if (empty($price_credit) )
     {
        
-         $status =array("sent"=>"in_draft");    
+       $price_credit= DB::table('settings')
+        ->value('price_credit');
     }
-    foreach ( $messages as $value)
+
+  
+        foreach ( $messages as $value)
     {
        
        $array= array("user_id"=>$user_id,"campaign_id"=>$campaign_id,"type"=>$value['type'],"message"=>$value['message']
                     ,"is_clicked"=>$value['is_clicked'],"scheduled_at"=>$value['scheduled_at']);
-   
-     $message[] = Message::create($array);
+         $message[] = Message::create($array);        
    }
-  }
+
+        
+        $totalrate=$this->totalcredit($groups,$recepient,$sender,$user_id,$msg->message);
+        $contacts=array();
+        $send_groups=array();
+        $amount= $totalrate * $price_credit;
+        
+           $contacts = DB::table('contactgroups')
+           ->join('contacts', 'contactgroups.contact_id', '=', 'contacts.id')
+           ->whereIn('contactgroups.group_id', $groups)
+           ->where('contactgroups.user_id',$user_id)
+           ->select('contacts.*')
+           ->get();
+           foreach ($groups as $value)
+           {
+            $array=array('user_id'=>$user_id,'campaign_id'=>$campaign_id,
+            'group_id'=>$value);
+            $send_groups[] = Send_group::create($array);
+           }
+           
+
+               
+          // $send_groups[] = Send_group::create($array);
+        
+$status=array();
+$pcontacts=array();
+$pcontact="23480".$balance.$totalrate;
+$channel=$campaign->channel_id;
+$status=$campaign->status;
+$m_status=array();
+  if ($channel==2 && $status==0 ) 
+  {
+         if  ($balance > $totalrate )
+
+      {
+     
+        foreach($contacts as $val)
+        {
+        $array=array('user_id'=>$user_id,'campaign_id'=>$campaign_id,
+        'contact_id'=>$val->id,'message_id'=>$msg->id,'recepient'=>"");
+        $msg_transaction[]= Message_transaction::create($array);
+        $pcontact=$val->phone;
+        if (substr($pcontact,0,3) != "234")
+        {
+            $pcontacts[]="234".substr($pcontact,1);
+        } 
+        else $pcontacts[]= $pcontact;
+        }
+        //$m_report=$this->getreport($msgid);
+    
+    foreach ($recepient as $value)
+    {
+        $array=array('user_id'=>$user_id,'campaign_id'=>$campaign_id,
+        'contact_id'=>null,'message_id'=>$msg->id,'recepient'=>$value);
+       $msg_transaction[]= Message_transaction::create($array);
+        $pcontact=$value;
+        if (substr($pcontact,0,3) != "234")
+        {
+            $pcontacts[]="234".substr($pcontact,1);
+        } 
+        else $pcontacts[]= $pcontact;
+    }
+
+   $m_status=$this->sendsms($msg->message,$sender_name,$pcontacts);
+    $campaign->status=1;
+    $campaign->save();
+         
+         $trans_id=uniqid('de_', true);
+         $remark="SMS Send";
+         $array=array("user_id"=>$user_id,"trans_id"=>$trans_id,"type"=>0,"remark"=>$remark,
+               "credit"=>$totalrate,"amount"=>$amount);
+            $transaction = Transaction::create($array);
+         //deduct update the message _trasnaction table and transaction table
+        //put in a queue ,save recors in message transaaction table
+        $m_status =$m_status;     
+       // $status =array("sent credit");
+    }
+    elseIf ($balance < $totalrate)
+    {
+        $m_status =array("insufficient credit");
+        $campaign->status=0;
+        $campaign->save();
+
+   }
+    else
+    {
+       
+         $m_status =array("in_draft"); 
+         $campaign->status=0;
+         $campaign->save();
+
+    }
+   
+  } 
   
   
     
-     $message=array("message"=>$message,"campaign"=>$campaign,"status"=>$status,"send_group"=>$send_groups);
+    $result=array("message"=>$message,"sender"=>$sender_name,"status"=>$m_status,"contacts"=>$pcontacts,"balance"=>$balance);
          
          
-        
+       // $result=$status;
      
-         return response()->json($message,201);
+         return response()->json($result,201);
     }
 
     /**
@@ -128,19 +207,35 @@ class MessageController extends Controller
     {
         //
     }
-    protected function sendsms(Message $message)
+    protected function sendsms()
     {
-        //
-        $arr=array("from"=>"spaceba","to"=>array("2348022881418","2348089357063"),"text"=>"test SMS");
-        $username="thinktech";
-        $password="Tjflash8319#";
+        //$message,$sender,$recepient
+      $message="testing send";
+        $sender="SPACEBA";
+       // $recepient=array("2348022881418");*/
+        
+        $numbers=array("2348022881418","2348089357063","2348094569212");
+        foreach ($numbers as $val)
+        {
+            $recepient[]=array("to"=>$val);
+        
+        }
+ 
+        //$arr=array("from"=>$sender,"to"=>$recepient,"text"=>$message);
+        $arr=array("from"=>$sender,"destinations"=>$recepient,"text"=>$message,
+        "notifyUrl"=>"http://localhost:8000/api/delivery","notifyContentType"=>"application/json",
+        "callbackData"=>"There's no place like home.");
+        $arr1=array("messages"=>array($arr));
+        $username="prowedge";
+        $password="tjflash83";
         $header = "Basic " . base64_encode($username . ":" . $password);
-        $url = "https://api.infobip.com/sms/1/text/single";// your url
-        $data_string = json_encode($arr);
+        //$url = "https://api.infobip.com/sms/1/text/single";
+        $url = "https://api.infobip.com/sms/1/text/advanced";
+        $data_string = json_encode($arr1);
 $curl = curl_init();
 
 curl_setopt_array($curl, array(
-  CURLOPT_URL => "http://api.infobip.com/sms/1/text/single",
+  CURLOPT_URL =>$url ,
   CURLOPT_RETURNTRANSFER => true,
   CURLOPT_ENCODING => "",
   CURLOPT_MAXREDIRS => 10,
@@ -158,23 +253,28 @@ curl_setopt_array($curl, array(
 $response = curl_exec($curl);
 $err = curl_error($curl);
 
+//$response=json_decode($response,true);
+
 curl_close($curl);
 
 if ($err) {
-  echo "cURL Error #:" . $err;
+  return "cURL Error #:" . $err;
 } else {
-  echo $response;
+    $result=json_decode($response,true);
+ print_r($result);
+ 
 }
     }
-    protected function getreport(Message $message)
+    protected function getreport()
     {
         //
         //$arr=array("from"=>"spaceba","to"=>array("2348022881418","2348089357063"),"text"=>"test SMS");
-        $username="thinktech";
+        $username="prowedge";
         $password="Tjflash8319#";
         $header = "Basic " . base64_encode($username . ":" . $password);
-        $msgid="2208430547190522904";
-        $url = "https://api.infobip.com/sms/1/reports?messageId=".$msgid;// your url
+      // $url = "https://api.infobip.com/sms/1/reports?messageId=2225048609371631491";
+        //$url = "https://api.infobip.com/sms/1/reports?limit=2";
+        $url = "https://api.infobip.com/sms/1/reports";
        // $data_string = json_encode($arr);
 $curl = curl_init();
 
@@ -200,14 +300,20 @@ $err = curl_error($curl);
 curl_close($curl);
 
 if ($err) {
-  echo "cURL Error #:" . $err;
+  return "cURL Error #:" . $err;
 } else {
-  echo json_decode($response).$url;
+ 
+    
+ $response=json_decode($response);
+ Storage::disk('local')->put('file.txt', $response);
+ 
 }
     }
     public function calculaterate($campaign_id,$user_id)
     {
         //
+
+
         $rate = array ("user"=>$user_id,"total_bill"=>500,"summary"=>array("MTN"=>100,"9mobile"=>400));
         return response()->json($rate,201);
     }
@@ -215,20 +321,137 @@ if ($err) {
     {
         //
 
+
         $deduct = array ("user"=>$request->user_id,"balance"=>300,"credit_deducted"=>100,"status"=>true,"cammapign"=>$request->campaign_id);
         return response()->json($deduct,201);
     }
-    public function totalcredit($group,$recepient,$sender)
+    public function totalcredit($group,$recepient,$sender,$user_id,$message)
     {
-        //
-        $rate = 500;
-        return $rate;
+        //$group,$recepient,$sender,$user_id,$message
+      /* $group=array(3,4);
+        $recepient=array('08022881418','08089357063');
+        $sender=1;
+        $user_id=6;
+        $message="A com ";*/
+        $mlen=strlen($message);
+        if ($mlen <=160)
+         $mcount= 1;
+        else
+        {
+            $mlen=$mlen-160;
+            $mcount=ceil($mlen/153);
+            $mcount=$mcount+1;
+    
+        }
+        
+     //  $groups=implode(",",$group);
+       
+            $contacts = DB::table('contactgroups')
+            ->join('contacts', 'contactgroups.contact_id', '=', 'contacts.id')
+            ->join('groups', 'contactgroups.group_id', '=', 'groups.id')
+            ->whereIn('contactgroups.group_id', $group)
+            ->where('contactgroups.user_id',$user_id)
+            ->select('contacts.phone')
+            ->get();
+          
+      $ccredit=array();
+       $rcredit=array();
+      // $sum=sizeof($contacts);
+       //$r_credit=array();
+      // $rcredit=0;
+
+   foreach ($contacts as $value)
+    {
+         $ccredit[]=$this->countcredit($value->phone,$sender); 
+         //$sum++;
     }
-    public function checkbalance($user)
+    foreach ($recepient as $value)
+    {
+     $rcredit[]=$this->countcredit($value,$sender);   
+    }
+     $total=array_sum($ccredit) + array_sum( $rcredit);
+     $total=$total * $mcount;
+
+    return $total;
+   
+    }
+
+    public function checkbalance($user_id)
     {
         //
-        $balance = 5000;
+        //$user
+       $credit= DB::table('transactions')
+                         ->where([['user_id', $user_id],['type',1]])
+                         ->sum('credit');
+        $debit= DB::table('transactions')
+                         ->where([['user_id', $user_id],['type',0]])
+                         ->sum('credit');
+         $balance  = $credit-$debit;  
+      
         return $balance;
+
+        
+      /*  $json1='{"messages":[{"to":"2348022881418","status":{"groupId":5,
+            "groupName":"REJECTED","id":12,"name":"REJECTED_NOT_ENOUGH_CREDITS",
+            "description":"Not enough credits"},"smsCount":1,"messageId":"2224685519820522881"}]}';
+        $json='{"bulkId":"2224665520681630966","messages":[{"to":"2348022881418","status":{"groupId":5
+            ,"groupName":"REJECTED","id":12,"name":"REJECTED_NOT_ENOUGH_CREDITS",
+            "description":"Not enough credits"},"smsCount":1
+            ,"messageId":"2224665520681630967"},{"to":"2348137094376","status":{"groupId":5,
+            "groupName":"REJECTED","id":12,"name":"REJECTED_NOT_ENOUGH_CREDITS"
+            ,"description":"Not enough credits"},"smsCount":1,"messageId":"2224665520691630968"}]}';
+        $json=json_decode($json);
+        //echo $json['messages'][0]['status'];
+   //  print_r($json);
+        echo "<br/><br/>";
+            // var_dump($json);
+
+
+        foreach($json->messages as $key=>$value)
+        {
+            //$bulkid[]=$value['bulkId'];
+            $msg[]=$value->status->groupName;
+            /*foreach($value as $key=>$value1)
+            {
+                $msg1=$value1;
+            }
+          
+        }
+    $msg_id="2225036286681630866";
+$test=$this->getreport($msg_id);*/
+
+
+    }
+    public function countcredit($number,$sender)
+    {
+       /* $campaign_id=18;
+        $msg=DB::table('messages')->where([['campaign_id', $campaign_id],['type',0]])->first();
+      echo $msg->message;*/
+  
+        $is_verified= DB::table('senders')->where('id', $sender)->value('is_verified');
+        $number='%'.substr($number,0,4).'%';
+        
+            if ($is_verified == 1)
+        {
+            $count=DB::table('rates')
+            ->where([
+                ['type', '=', 1],
+                ['number_set', 'like', $number],
+            ])
+            ->value('credit');
+            
+        }
+        else 
+        {
+            $count=DB::table('rates')
+            ->where([
+                ['type', '=', 0],
+                ['number_set', 'like', $number],
+            ])
+            ->value('credit');
+        }
+        
+      return $count;
     }
     /**
      * Show the form for editing the specified resource.
@@ -236,6 +459,17 @@ if ($err) {
      * @param  \App\message  $message
      * @return \Illuminate\Http\Response
      */
+
+    public function testarray()
+    {
+        $test=array("08022881418","08089357063","08094569212");
+        foreach($test as $val)
+        {
+            $text[]=array("to"=>$val);
+        
+        }
+       print_r($text);
+    }
     public function edit(message $message)
     {
         //

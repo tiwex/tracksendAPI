@@ -4,9 +4,9 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Message_Transaction extends Model
+class Message_transaction extends Model
 {
     //
     protected $fillable = [
-        'user_id','campaign_id','type','message','is_sent','is_clicked','schedule_at'];
+        'user_id','campaign_id','message_id','contact_id','recepient'];
 }
