@@ -58,11 +58,6 @@ class CampaignController extends Controller
      //confirm if messgae will be schedule,saved or sent now
      //if meesage statu is set to sent put message in a mesage queue for sending
      //if message status is et to scheudle put in a message queueu
-
-
-
-	 return response()->json($campaign,201);
-
     }
 
     /**
@@ -75,8 +70,12 @@ class CampaignController extends Controller
     {
         //getsentcampaign,get contacts/recepient message status , 
         //getdraftandschedule campaign
-      $campaign=DB::table('campaigns')->where('user_id', $userid)->get();
-
+      /*$campaign=DB::table('campaigns')->
+      where('user_id', $userid)->get();*/
+      $campaign=DB::table('campaigns')
+      ->join('messages', 'messages.campaign_id', '=', 'campaigns.id')
+      ->where('campaigns.user_id',$userid)
+      ->get();
       return response()->json($campaign,201);
     }
     public function pricecalculator(campaign $campaign)

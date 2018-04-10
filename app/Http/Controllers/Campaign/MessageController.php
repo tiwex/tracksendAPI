@@ -130,9 +130,9 @@ $m_status=array();
      
         foreach($contacts as $val)
         {
-        $array=array('user_id'=>$user_id,'campaign_id'=>$campaign_id,
+       /* $array=array('user_id'=>$user_id,'campaign_id'=>$campaign_id,
         'contact_id'=>$val->id,'message_id'=>$msg->id,'recepient'=>"");
-        $msg_transaction[]= Message_transaction::create($array);
+        $msg_transaction[]= Message_transaction::create($array);*/
         $pcontact=$val->phone;
         if (substr($pcontact,0,3) != "234")
         {
@@ -144,9 +144,9 @@ $m_status=array();
     
     foreach ($recepient as $value)
     {
-        $array=array('user_id'=>$user_id,'campaign_id'=>$campaign_id,
+       /* $array=array('user_id'=>$user_id,'campaign_id'=>$campaign_id,
         'contact_id'=>null,'message_id'=>$msg->id,'recepient'=>$value);
-       $msg_transaction[]= Message_transaction::create($array);
+       $msg_transaction[]= Message_transaction::create($array);*/
         $pcontact=$value;
         if (substr($pcontact,0,3) != "234")
         {
@@ -207,27 +207,24 @@ $m_status=array();
     {
         //
     }
-    protected function sendsms()
+    protected function sendsms($message,$sender,$recepient)
     {
         //$message,$sender,$recepient
-      $message="testing send";
-        $sender="SPACEBA";
-       // $recepient=array("2348022881418");*/
-        
-        $numbers=array("2348022881418","2348089357063","2348094569212");
-        foreach ($numbers as $val)
+        // $message="testing send";
+       //$sender="SPACEBA";
+        //$recepient=array("2348022881418");
+       // $numbers=array("2348022881418","2348089357063");
+        foreach ($recepient as $val)
         {
-            $recepient[]=array("to"=>$val);
+            $recepients[]=array("to"=>$val);
         
         }
  
         //$arr=array("from"=>$sender,"to"=>$recepient,"text"=>$message);
-        $arr=array("from"=>$sender,"destinations"=>$recepient,"text"=>$message,
-        "notifyUrl"=>"http://localhost:8000/api/delivery","notifyContentType"=>"application/json",
-        "callbackData"=>"There's no place like home.");
+        $arr=array("from"=>$sender,"destinations"=>$recepients,"text"=>$message);
         $arr1=array("messages"=>array($arr));
-        $username="prowedge";
-        $password="tjflash83";
+        $username="thinktech";
+        $password="Tjflash8319#";
         $header = "Basic " . base64_encode($username . ":" . $password);
         //$url = "https://api.infobip.com/sms/1/text/single";
         $url = "https://api.infobip.com/sms/1/text/advanced";
@@ -265,16 +262,16 @@ if ($err) {
  
 }
     }
-    protected function getreport()
+ protected function getreport($msg_id)
     {
         //
         //$arr=array("from"=>"spaceba","to"=>array("2348022881418","2348089357063"),"text"=>"test SMS");
-        $username="prowedge";
+        $username="thinktech";
         $password="Tjflash8319#";
         $header = "Basic " . base64_encode($username . ":" . $password);
-      // $url = "https://api.infobip.com/sms/1/reports?messageId=2225048609371631491";
-        //$url = "https://api.infobip.com/sms/1/reports?limit=2";
-        $url = "https://api.infobip.com/sms/1/reports";
+       $url = "https://api.infobip.com/sms/1/reports?messageId=".$msg_id;
+       // $url = "https://api.infobip.com/sms/1/reports?limit=2";
+      // $url = "https://api.infobip.com/sms/1/reports";
        // $data_string = json_encode($arr);
 $curl = curl_init();
 
@@ -303,9 +300,10 @@ if ($err) {
   return "cURL Error #:" . $err;
 } else {
  
-    
- $response=json_decode($response);
- Storage::disk('local')->put('file.txt', $response);
+   echo $response; 
+ //$response=json_decode($response);
+ //print_r($response);
+ //Storage::disk('local')->put('file.txt', $response);
  
 }
     }
@@ -462,13 +460,18 @@ $test=$this->getreport($msg_id);*/
 
     public function testarray()
     {
-        $test=array("08022881418","08089357063","08094569212");
-        foreach($test as $val)
-        {
-            $text[]=array("to"=>$val);
+        $json='{"results":[{"bulkId":"2233276043823536966","messageId":"2233276043823536967","to":"2348022881418",
+            "from":"SPACEBA","sentAt":"2018-04-10T02:33:24.377+0000",
+            "doneAt":"2018-04-10T02:33:28.896+0000","smsCount":1,"mccMnc":"null",
+            "price":{"pricePerMessage":1.1200000000,"currency":"NGN"},
+            "status":{"groupId":3,"groupName":"DELIVERED","id":5,"name":"DELIVERED_TO_HANDSET"
+                ,"description":"Message delivered to handset"},
+                "error":{"groupId":0,"groupName":"OK","id":0,"name":"NO_ERROR","description":"No Error",
+            "permanent":false}}]}';
         
-        }
-       print_r($text);
+        $json=json_decode($json,true);
+        print_r($json);
+        
     }
     public function edit(message $message)
     {
