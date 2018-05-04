@@ -80,6 +80,19 @@ class CampaignController extends Controller
       ->get();
       return response()->json($campaign,201);
     }
+    public function showbyid($userid,$campaign_id)
+    {
+        //getsentcampaign,get contacts/recepient message status , 
+        //getdraftandschedule campaign
+      /*$campaign=DB::table('campaigns')->
+      where('user_id', $userid)->get();*/
+      $campaign=DB::table('campaigns')
+      //->leftjoin('messages', 'messages.campaign_id', '=', 'campaigns.id')
+      ->select('*',DB::raw('(select count(*) from messages m where m.campaign_id = campaigns.id) as cnt'))
+      ->where([['campaigns.user_id',$userid],['campaigns.id',$campaign_id]])
+      ->get();
+      return response()->json($campaign,201);
+    }
     public function pricecalculator(campaign $campaign)
     {
         //getsentcampaign,get contacts/recepient message status , 
