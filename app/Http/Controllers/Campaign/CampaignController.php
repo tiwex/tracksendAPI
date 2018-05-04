@@ -90,7 +90,7 @@ class CampaignController extends Controller
       //->leftjoin('messages', 'messages.campaign_id', '=', 'campaigns.id')
       ->select('*',DB::raw('(select count(*) from messages m where m.campaign_id = campaigns.id) as cnt'))
       ->where([['campaigns.user_id',$userid],['campaigns.id',$campaign_id]])
-      ->get();
+      ->first();
       return response()->json($campaign,201);
     }
     public function pricecalculator(campaign $campaign)
