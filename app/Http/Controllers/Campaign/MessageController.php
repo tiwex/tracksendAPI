@@ -8,6 +8,7 @@ use App\Message_transaction;
 use App\User;
 use App\Transaction;
 use App\Send_group ;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
@@ -63,7 +64,6 @@ class MessageController extends Controller
          $recepient =$request->input('recepient');
          $is_sent =$request->input('is_sent');
          $url_id =$request->input('url_id');
-         $msg=DB::table('messages')->where([['campaign_id', $campaign_id],['type',0]])->first();
         $campaign = Campaign::where('id',$campaign_id)->first();
         $campaign->recepient=implode(",",$recepient);
         $campaign->sender_id=$sender;
@@ -87,13 +87,15 @@ class MessageController extends Controller
   
         foreach ( $messages as $value)
     {
-       
+        $date=$value['scheduled_at'];
+        if (!empty( $date)) $date=Carbon::createFromFormat('Y-m-d H:i:s', $date);
        $array= array("user_id"=>$user_id,"campaign_id"=>$campaign_id,"type"=>$value['type'],"message"=>$value['message']
-                    ,"is_clicked"=>$value['is_clicked'],"scheduled_at"=>$value['scheduled_at']);
+                    ,"is_clicked"=>$value['is_clicked'],"scheduled_at"=>$date);
          $message[] = Message::create($array);        
    }
 
-        
+     
+       $msg=DB::table('messages')->where([['campaign_id', $campaign_id],['type',0]])->first();
         $totalrate=$this->totalcredit($groups,$recepient,$sender,$user_id,$msg->message);
         $contacts=array();
         $send_groups=array();
@@ -132,8 +134,10 @@ $m_status=array();
         {
         $array=array('user_id'=>$user_id,'campaign_id'=>$campaign_id,
         'contact_id'=>$val->id,'message_id'=>$msg->id,'recepient'=>"");
-        $msg_transaction[]= Message_transaction::create($array);
+        $msg_transaction= Message_transaction::create($array);
         $pcontact=$val->phone;
+       
+        
         if (substr($pcontact,0,3) != "234")
         {
             $pcontact="234".substr($pcontact,1);
@@ -154,14 +158,27 @@ $m_status=array();
        
         $array=array('user_id'=>$user_id,'campaign_id'=>$campaign_id,
         'contact_id'=>null,'message_id'=>$msg->id,'recepient'=>$pcontact);
-       $msg_transaction[]= Message_transaction::create($array);
+       $msg_transaction= Message_transaction::create($array);
        $pcontacts[]=array("to"=>$pcontact,"messageId"=>$msg_transaction["id"]);
-    }
-
-   $m_status=$this->sendsms($msg->message,$sender_name,$pcontacts);
-    
-    $campaign->status=1;
-    $campaign->save();
+      }   
+    //$m_status="test";
+    $schedule_at= Message::where([['campaign_id', $campaign->id],['user_id',$user_id],['type',0]])->value('scheduled_at');
+   
+         if (!empty( $schedule_at))
+        {
+         $schedule_at=Carbon::createFromFormat('Y-m-d H:i:s', $schedule_at)->format('Y-m-d').'T'.
+            Carbon::createFromFormat('Y-m-d H:i:s', $schedule_at)->format('H:i:s').'.'.'000+01:00';
+        $m_status=$this->sendsms($msg->message,$sender_name,$pcontacts,$schedule_at);  
+       // $m_status=$schedule_at;
+        $campaign->status=2;
+        $campaign->save();
+      }
+     else
+     {
+     $m_status=$this->sendsms($msg->message,$sender_name,$pcontacts);
+     $campaign->status=1;
+     $campaign->save();
+     }
          
          $trans_id=uniqid('de_', true);
          $remark="SMS Send";
@@ -170,11 +187,10 @@ $m_status=array();
             $transaction = Transaction::create($array);
          //deduct update the message _trasnaction table and transaction table
         //put in a queue ,save recors in message transaaction table
-        $m_status =$m_status; 
 
-        $array=array('user_id'=>$user_id,'campaign_id'=>$campaign_id,
+      /*  $array=array('user_id'=>$user_id,'campaign_id'=>$campaign_id,
         'contact_id'=>null,'message_id'=>$msg->id,'recepient'=>$value);
-        $msg_transaction[]= Message_transaction::create($array);
+        $msg_transaction= Message_transaction::create($array);*/
 
        // $status =array("sent credit");
     }
@@ -196,13 +212,11 @@ $m_status=array();
    
   } 
   
-  
-    
-    $result=array("message"=>$message,"sender"=>$sender_name,"status"=>$m_status,"contacts"=>$pcontacts,"balance"=>$balance);
+  $result=array("message"=>$message,"sender"=>$sender_name,"status"=>$m_status,"contacts"=>$pcontacts,"balance"=>$balance);
          
          
-       // $result=$status;
-     
+       
+   //  $result=array($msg_transaction,$test);
          return response()->json($result,201);
     }
 
@@ -216,7 +230,7 @@ $m_status=array();
     {
         //
     }
-    protected function sendsms($message,$sender,$recepient)
+    protected function sendsms($message,$sender,$recepients,$scheduled_at="")
     {
         //$message,$sender,$recepient
         // $message="testing send";
@@ -231,6 +245,10 @@ $m_status=array();
  
         //$arr=array("from"=>$sender,"to"=>$recepient,"text"=>$message);
         $arr=array("from"=>$sender,"destinations"=>$recepients,"text"=>$message);
+        if (!empty($scheduled_at))
+        {
+            $arr=array("from"=>$sender,"destinations"=>$recepients,"text"=>$message,"sent_At"=>$scheduled_at);
+        }
         $arr1=array("messages"=>array($arr));
         $username="prowedge";
         $password="tjflash83";
@@ -266,7 +284,7 @@ curl_close($curl);
 if ($err) {
   return "cURL Error #:" . $err;
 } else {
-    $result=json_decode($response,true);
+$result=json_decode($response,true);
  return $result;
  
 }
@@ -275,8 +293,8 @@ if ($err) {
     {
         //
         //$arr=array("from"=>"spaceba","to"=>array("2348022881418","2348089357063"),"text"=>"test SMS");
-        $username="thinktech";
-        $password="Tjflash8319#";
+        $username="prowedge";
+        $password="tjflash83";
         $header = "Basic " . base64_encode($username . ":" . $password);
        $url = "https://api.infobip.com/sms/1/reports?messageId=".$msg_id;
        // $url = "https://api.infobip.com/sms/1/reports?limit=2";
@@ -398,34 +416,6 @@ if ($err) {
         return $balance;
 
         
-      /*  $json1='{"messages":[{"to":"2348022881418","status":{"groupId":5,
-            "groupName":"REJECTED","id":12,"name":"REJECTED_NOT_ENOUGH_CREDITS",
-            "description":"Not enough credits"},"smsCount":1,"messageId":"2224685519820522881"}]}';
-        $json='{"bulkId":"2224665520681630966","messages":[{"to":"2348022881418","status":{"groupId":5
-            ,"groupName":"REJECTED","id":12,"name":"REJECTED_NOT_ENOUGH_CREDITS",
-            "description":"Not enough credits"},"smsCount":1
-            ,"messageId":"2224665520681630967"},{"to":"2348137094376","status":{"groupId":5,
-            "groupName":"REJECTED","id":12,"name":"REJECTED_NOT_ENOUGH_CREDITS"
-            ,"description":"Not enough credits"},"smsCount":1,"messageId":"2224665520691630968"}]}';
-        $json=json_decode($json);
-        //echo $json['messages'][0]['status'];
-   //  print_r($json);
-        echo "<br/><br/>";
-            // var_dump($json);
-
-
-        foreach($json->messages as $key=>$value)
-        {
-            //$bulkid[]=$value['bulkId'];
-            $msg[]=$value->status->groupName;
-            /*foreach($value as $key=>$value1)
-            {
-                $msg1=$value1;
-            }
-          
-        }
-    $msg_id="2225036286681630866";
-$test=$this->getreport($msg_id);*/
 
 
     }
@@ -469,7 +459,7 @@ $test=$this->getreport($msg_id);*/
 
     public function testarray()
     {
-        $json='{"results":[{"bulkId":"2233276043823536966","messageId":"2233276043823536967","to":"2348022881418",
+       /* $json='{"results":[{"bulkId":"2233276043823536966","messageId":"2233276043823536967","to":"2348022881418",
             "from":"SPACEBA","sentAt":"2018-04-10T02:33:24.377+0000",
             "doneAt":"2018-04-10T02:33:28.896+0000","smsCount":1,"mccMnc":"null",
             "price":{"pricePerMessage":1.1200000000,"currency":"NGN"},
@@ -479,8 +469,12 @@ $test=$this->getreport($msg_id);*/
             "permanent":false}}]}';
         
         $json=json_decode($json,true);
-        print_r($json);
-        
+        print_r($json);*/
+
+        $date='2018-04-18 16:18:50';
+        $date1=Carbon::createFromFormat('Y-m-d H:i:s', $date)->format('Y-m-d');
+        $time=Carbon::createFromFormat('Y-m-d H:i:s', $date)->format('H:i:s');
+        echo $date1.'T'.$time.'.'.'000+01:00';
     }
     public function edit(message $message)
     {

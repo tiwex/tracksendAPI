@@ -1,7 +1,8 @@
 <?php
 
 namespace App\Console;
-
+use App\Contactgroup;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -26,6 +27,14 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')
         //          ->hourly();
+        $schedule->call(function () {
+            DB::table('test')->insert(
+                ['name' => 'john akinseye', 'email' => 'taiwo@yahoo.com']
+            );
+        })->everyMinute();
+       /* $schedule->command('inspire')
+              ->everyMinute()
+              ->appendOutputTo('C:\xampp\htdocs\test.txt');*/
     }
 
     /**

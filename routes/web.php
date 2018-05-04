@@ -16,6 +16,6 @@ Route::get('/', function () {
 });
 Route::get('/sms', 'Campaign\MessageController@sendsms');
 Route::get('/contact', 'Contact\ContactController@store');
-Route::get('/report', 'Campaign\MessageController@getreport');
+Route::get('/report/{msgid}', 'Campaign\MessageController@getreport');
 Route::get('/credit', 'Campaign\MessageController@checkbalance');
 Route::get('/test', 'Campaign\MessageController@testarray');
