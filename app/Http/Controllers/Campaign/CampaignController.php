@@ -47,12 +47,13 @@ class CampaignController extends Controller
     public function store(Request $request)
     {
      $this->validator($request->all())->validate();
+   /* $url=$request->input('url');
+     $name=
+     $token= return substr(md5(uniqid(mt_rand(), true)), 0, 7);
+     $array= array("name"=>$name, "user_id"=>$user_id,"provider_id"=>$provider_id,"sender_id"=>$sender_id,"channel_id"=>$channel_id
+        ,"status"=>$status,"url"=>$url,"token"=>$token);*/
      $campaign = Campaign::create($request->all());
-   /*$name=$request->input('name');
-    //$user_id = $request->input('user_id');
-    //$campaign=DB::table('campaigns')->insert(
-     ['name' => $name, 'user_id' => $user_id,'created_at'=>date("Y-m-d h:i:s"),'updated_at'=>date("Y-m-d h:i:s")]
-    )*/
+
  
 
      //confirm if messgae will be schedule,saved or sent now

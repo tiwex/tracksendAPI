@@ -19,3 +19,4 @@ Route::get('/contact', 'Contact\ContactController@store');
 Route::get('/report/{msgid}', 'Campaign\MessageController@getreport');
 Route::get('/credit', 'Campaign\MessageController@checkbalance');
 Route::get('/test', 'Campaign\MessageController@testarray');
+Route::get('/multi', 'Campaign\MessageController@sendmulsms');
